@@ -11,10 +11,11 @@ the agent workflow, PostgreSQL for storage, Qdrant for the knowledge base
 
 ## Status
 
-🚧 **Phase 1 of 13 — Telegram MVP.** Only `/start` and `/help` exist so
-far; no AI, database, or agent logic yet. See the roadmap below.
+🚧 **Phase 2 of 13 — Local LLM.** Bot has `/start`, `/help`, and replies
+to plain text via a local Ollama model through a provider abstraction.
+No agent, tools, database, or approval flow yet. See the roadmap below.
 
-## Setup (Phase 1)
+## Setup
 
 ```bash
 python -m venv .venv
@@ -22,10 +23,25 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 
 cp .env.example .env
-# edit .env and set TELEGRAM_BOT_TOKEN (get one from @BotFather)
+# edit .env: set TELEGRAM_BOT_TOKEN (from @BotFather)
 
 python -m app.main
 ```
+
+### LLM (Ollama)
+
+The bot's plain-text replies need a running Ollama server with the
+configured model pulled:
+
+```bash
+# install: https://ollama.com/download
+ollama pull qwen2.5:7b-instruct   # or whatever OLLAMA_MODEL is set to
+ollama serve                       # if not already running
+```
+
+`OLLAMA_BASE_URL` defaults to `http://localhost:11434`. If Ollama isn't
+running or the model isn't pulled, the bot catches the error and replies
+with a friendly Uzbek fallback message instead of crashing.
 
 ## Testing
 
@@ -42,7 +58,10 @@ app/
 ├── main.py              # entry point (long polling)
 ├── bot/
 │   ├── bot.py            # Bot + Dispatcher factories
-│   └── handlers/         # /start, /help, ...
+│   └── handlers/         # /start, /help, chat (LLM fallback), ...
+├── ai/
+│   ├── llm.py             # provider selection (LLM_PROVIDER)
+│   └── providers/         # base.py (LLMProvider ABC), ollama.py
 └── core/
     ├── config.py          # pydantic-settings configuration
     └── logging.py         # structured console logging
@@ -52,7 +71,7 @@ tests/
 ## Roadmap
 
 1. ✅ Telegram MVP (bot, config, logging)
-2. Local LLM (Ollama + provider abstraction)
+2. ✅ Local LLM (Ollama + provider abstraction)
 3. AI agent (LangGraph state + tools)
 4. PostgreSQL (models, repositories, migrations)
 5. Marketing engine (post/campaign/audience/rewrite generation)

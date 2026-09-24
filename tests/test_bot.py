@@ -9,6 +9,7 @@ def test_create_dispatcher_registers_start_and_help_routers():
 
     assert "start" in router_names
     assert "help" in router_names
+    assert "chat" in router_names
 
 
 def test_create_bot_uses_token_from_settings(monkeypatch):
