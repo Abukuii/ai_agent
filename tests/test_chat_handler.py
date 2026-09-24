@@ -6,27 +6,25 @@ from app.bot.handlers import chat as chat_handler
 
 
 @pytest.mark.asyncio
-async def test_handle_text_replies_with_llm_output(monkeypatch):
-    fake_provider = AsyncMock()
-    fake_provider.generate.return_value = "salom!"
-    monkeypatch.setattr(chat_handler, "get_llm_provider", lambda: fake_provider)
+async def test_handle_text_replies_with_agent_final_response(monkeypatch):
+    monkeypatch.setattr(chat_handler, "get_llm_provider", lambda: object())
+    fake_run_agent = AsyncMock(return_value={"final_response": "salom!", "intent": "chat"})
+    monkeypatch.setattr(chat_handler, "run_agent", fake_run_agent)
 
     message = AsyncMock()
     message.text = "salom"
 
     await chat_handler.handle_text(message)
 
-    fake_provider.generate.assert_awaited_once_with(
-        "salom", system=chat_handler.SYSTEM_PROMPT
-    )
+    fake_run_agent.assert_awaited_once()
     message.answer.assert_awaited_once_with("salom!")
 
 
 @pytest.mark.asyncio
-async def test_handle_text_replies_gracefully_on_llm_failure(monkeypatch):
-    fake_provider = AsyncMock()
-    fake_provider.generate.side_effect = RuntimeError("ollama unreachable")
-    monkeypatch.setattr(chat_handler, "get_llm_provider", lambda: fake_provider)
+async def test_handle_text_replies_gracefully_on_agent_failure(monkeypatch):
+    monkeypatch.setattr(chat_handler, "get_llm_provider", lambda: object())
+    fake_run_agent = AsyncMock(side_effect=RuntimeError("boom"))
+    monkeypatch.setattr(chat_handler, "run_agent", fake_run_agent)
 
     message = AsyncMock()
     message.text = "salom"
@@ -38,13 +36,13 @@ async def test_handle_text_replies_gracefully_on_llm_failure(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_text_ignores_messages_without_text(monkeypatch):
-    fake_provider = AsyncMock()
-    monkeypatch.setattr(chat_handler, "get_llm_provider", lambda: fake_provider)
+    fake_run_agent = AsyncMock()
+    monkeypatch.setattr(chat_handler, "run_agent", fake_run_agent)
 
     message = AsyncMock()
     message.text = None
 
     await chat_handler.handle_text(message)
 
-    fake_provider.generate.assert_not_awaited()
+    fake_run_agent.assert_not_awaited()
     message.answer.assert_not_awaited()
